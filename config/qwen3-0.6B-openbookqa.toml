@@ -1,0 +1,50 @@
+[model]
+name = "Qwen/Qwen3-0.6B"
+think_substring = "think"
+think_token_format = "<{tok}>"
+
+[dataset]
+name = "allenai/openbookqa"
+config = "main"
+split = "test[:100]"
+
+[io]
+output = "data/qwen3-0.6B-openbookqa"
+
+[runtime]
+batch_size = 4
+seed = 42
+attn_implementation = "sdpa"
+
+[ablations]
+judge = "simple-regex"
+base_url = ""
+api_key = "NONE"
+metric = "fighting_words"
+ngram_range = [1, 1]
+strategy = "mask"
+penalty_weight = 1.0
+cutoff = 0.98
+top_k = 10
+max_steps = 20
+
+[runs.think]
+enable_thinking = true
+
+[runs.think.generation]
+do_sample = true
+max_new_tokens = 512
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+
+[runs.no_think]
+enable_thinking = false
+
+[runs.no_think.generation]
+do_sample = true
+max_new_tokens = 256
+temperature = 0.7
+top_p = 0.8
+top_k = 20

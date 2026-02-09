@@ -1,0 +1,19 @@
+# Python version
+target-version = "py313"
+
+# Cache location
+cache-dir = "~/.cache/ruff"
+
+# Include Jupyter
+extend-include = ["*.ipynb"]
+
+line-length = 79
+indent-width = 4
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[lint]
+ignore = ["E203", "W391"]

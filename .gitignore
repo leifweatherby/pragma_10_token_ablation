@@ -1,0 +1,27 @@
+data/
+!data/complexity_study_report.html
+!data/session_transcript_2026-02-09.txt
+
+# rclone
+rclone.conf
+
+# app (generated files)
+app/frontend/public/vocab.json
+app/frontend/public/vocab-*.json
+app/frontend/public/vocab-index.json
+app/frontend/public/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# direnv
+.direnv/
+
+# nix
+result

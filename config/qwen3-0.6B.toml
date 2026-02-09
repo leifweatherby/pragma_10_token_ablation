@@ -1,0 +1,50 @@
+[model]
+name = "Qwen/Qwen3-0.6B"
+think_substring = "think"
+think_token_format = "<{tok}>"
+
+[dataset]
+name = "allenai/ai2_arc"
+config = "ARC-Challenge"
+split = "train[:4]"
+
+[io]
+output = "data/qwen3-0.6B"
+
+[runtime]
+batch_size = 2
+seed = 357
+attn_implementation = "sdpa"
+
+[ablations]
+judge = "claude-haiku-4-5"
+base_url = "https://api.anthropic.com/v1/"
+api_key = "ANTHROPIC_API_KEY"
+metric = "fighting_words"
+ngram_range = [1, 3]
+strategy = "mask"
+penalty_weight = 1.0
+cutoff = 0.98
+top_k = 10
+max_steps = 100
+
+[runs.think]
+enable_thinking = true
+
+[runs.think.generation]
+do_sample = true
+max_new_tokens = 2048
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+
+[runs.no_think]
+enable_thinking = false
+
+[runs.no_think.generation]
+do_sample = true
+max_new_tokens = 1024
+temperature = 0.7
+top_p = 0.8
+top_k = 20
