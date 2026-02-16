@@ -56,6 +56,9 @@ def tokenize(
         # Handle both tensor and dict returns from apply_chat_template
         if isinstance(result, dict):
             input_ids = result['input_ids']
+        elif hasattr(result, 'input_ids'):
+            # Handle dict-like objects (BatchEncoding, etc.)
+            input_ids = result.input_ids
         else:
             input_ids = result
         batch_ids.append(input_ids.squeeze(0))
