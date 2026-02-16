@@ -13,6 +13,9 @@ requires = ["hatchling"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64"]
 
+[tool.pixi.dependencies]
+python = "3.13.*"
+
 [tool.pixi.pypi-dependencies]
 treetok = { path = ".", editable = true }
 pragma = { path = "./src_pragma", editable = true }
