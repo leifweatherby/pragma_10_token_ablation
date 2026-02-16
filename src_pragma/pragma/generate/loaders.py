@@ -191,41 +191,24 @@ def _load_bigbench(config="", split="test"):
 
             # Free-form format: generate choices by scrambling target string
             words = target.split()
-
             if len(words) < 2:
-                # Single word: shuffle letters to create distractors
-                if len(target) < 2:
-                    continue
+                continue
 
-                choices = [target]
-                letters = list(target)
-                attempts = 0
-                while len(choices) < 4 and attempts < 50:
-                    shuffled = letters.copy()
-                    random.shuffle(shuffled)
-                    shuffled_str = "".join(shuffled)
-                    if shuffled_str not in choices and shuffled_str != target:
-                        choices.append(shuffled_str)
-                    attempts += 1
+            # Set the correct answer, then shuffle
+            choices = [target]
+            attempts = 0
+            while len(choices) < 4 and attempts < 50:
+                shuffled = words.copy()
+                random.shuffle(shuffled)
 
-                if len(choices) < 4:
-                    continue
-            else:
-                # Multi-word: shuffle words to create distractors
-                choices = [target]
-                attempts = 0
-                while len(choices) < 4 and attempts < 50:
-                    shuffled = words.copy()
-                    random.shuffle(shuffled)
+                shuffled_str = " ".join(shuffled)
+                if shuffled_str not in choices:
+                    choices.append(shuffled_str)
 
-                    shuffled_str = " ".join(shuffled)
-                    if shuffled_str not in choices:
-                        choices.append(shuffled_str)
+                attempts += 1
 
-                    attempts += 1
-
-                if len(choices) < 4:
-                    continue
+            if len(choices) < 4:
+                continue
 
             # Shuffle everything one last time so that the first answer isn't
             # always the correct one

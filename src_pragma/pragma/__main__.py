@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 
 from pragma import InferenceConfig, LLMJudge
-from pragma.eval.simple_judge import SimpleJudge
 from pragma.generate import (
     AblationRunner,
     load_benchmark,
@@ -75,11 +74,6 @@ def main(argv=None):
         action="store_true",
         help="Enable DEBUG level logging",
     )
-    parser.add_argument(
-        "--simple-judge",
-        action="store_true",
-        help="Use simple regex-based judge instead of LLM judge (no API key needed)",
-    )
 
     # Parse arguments and set up logging
     args = parser.parse_args()
@@ -93,11 +87,11 @@ def main(argv=None):
     if not cfg.runs:
         raise ValueError("No runs defined in the config")
 
-    # Check for an API key, which we need for ablations (unless using simple judge)
+    # Check for an API key, which we need for ablations
     api_key = os.environ.get(cfg.ablations.api_key, None)
-    if args.runtype == "ablations" and api_key is None and not args.simple_judge:
+    if args.runtype == "ablations" and api_key is None:
         raise EnvironmentVariableError(
-            f"No API key set at {cfg.ablations.api_key}. Use --simple-judge for regex-based judging."
+            f"No API key set at {cfg.ablations.api_key}"
         )
 
     # Load the model and dataset, transforming the latter into examples
@@ -119,15 +113,11 @@ def main(argv=None):
         )
 
     elif args.runtype == "ablations":
-        if args.simple_judge:
-            judge = SimpleJudge()
-            logger.info("Using simple regex-based judge")
-        else:
-            judge = LLMJudge(
-                cfg.ablations.judge,
-                base_url=cfg.ablations.base_url,
-                api_key=api_key,
-            )
+        judge = LLMJudge(
+            cfg.ablations.judge,
+            base_url=cfg.ablations.base_url,
+            api_key=api_key,
+        )
         runner = AblationRunner(
             examples,
             model,
