@@ -11,7 +11,6 @@ Method:
 """
 
 import json
-import sys
 from pathlib import Path
 from transformers import AutoTokenizer
 from treetok import TokenClusterer
@@ -31,9 +30,10 @@ def main():
     token_ids = [i for _, i in vocab_items]
     print(f"Vocab size: {len(vocab)}", flush=True)
 
-    print("Building treetok clusters (distance=1)...", flush=True)
+    print("Building treetok clusters over full vocab (distance=1)...", flush=True)
     clusterer = TokenClusterer(vocab, token_ids, max_distance=1)
     clusterer.build()
+    print("BK-trees built, running union-find cluster()...", flush=True)
     clusterer.cluster()
     clusters = clusterer.get_cluster_info()
     print(f"Found {len(clusters)} clusters", flush=True)
@@ -45,48 +45,53 @@ def main():
             id_to_cluster[tid] = c
 
     # Load step-0 distinctiveness results
-    print("Loading distinctiveness results...", flush=True)
+    print("Loading distinctiveness scores...", flush=True)
     step0 = json.loads(STEP0_PATH.read_text())
     results = step0["distinctiveness_results"]
+    score_cliff_before = results[CLIFF_RANK - 1]["score"]
+    score_cliff_after  = results[CLIFF_RANK]["score"]
 
-    # Seed set: top-1281 (the dense metacognitive cluster)
+    # Seed set: top-1281 (dense metacognitive cluster above the cliff)
     seed_records = results[:CLIFF_RANK]
-    seed_ids = set()
-    seed_id_to_rank = {}
-    seed_id_to_score = {}
+    seed_id_to_meta = {}
     for r in seed_records:
         for tid in r["ngram"]:
-            seed_ids.add(tid)
-            seed_id_to_rank[tid] = r["rank"]
-            seed_id_to_score[tid] = r["score"]
+            seed_id_to_meta[tid] = {
+                "rank": r["rank"],
+                "score": r["score"],
+                "above_cutoff": r.get("above_cutoff", False),
+            }
 
-    print(f"Seed set: {len(seed_ids)} token IDs from top-{CLIFF_RANK} ranks", flush=True)
+    print(f"Seed set: {len(seed_id_to_meta)} token IDs from top-{CLIFF_RANK} ranks", flush=True)
 
-    # Expand via treetok
-    expanded_ids = set(seed_ids)
-    cluster_details = {}  # representative -> {seed_members, expanded_members}
+    # Expand via treetok clusters
+    expanded_ids = set(seed_id_to_meta.keys())
+    cluster_details = {}
 
-    for tid in sorted(seed_ids):
-        if tid not in id_to_cluster:
+    for seed_id, meta in sorted(seed_id_to_meta.items(), key=lambda x: x[1]["rank"]):
+        if seed_id not in id_to_cluster:
             continue
-        c = id_to_cluster[tid]
+        c = id_to_cluster[seed_id]
         rep = c["representative"]
+
         if rep not in cluster_details:
             cluster_details[rep] = {
                 "representative": rep,
                 "representative_id": c["representative_id"],
                 "seed_members": [],
                 "expanded_members": [],
-                "all_token_ids": c["token_ids"],
             }
+
         cluster_details[rep]["seed_members"].append({
-            "token": tok.decode([tid]),
-            "token_id": tid,
-            "rank": seed_id_to_rank.get(tid),
-            "score": seed_id_to_score.get(tid),
+            "token": tok.decode([seed_id]),
+            "token_id": seed_id,
+            "rank": meta["rank"],
+            "score": round(meta["score"], 6),
+            "above_cutoff": meta["above_cutoff"],
         })
+
         for xtid in c["token_ids"]:
-            if xtid not in seed_ids:
+            if xtid not in seed_id_to_meta:
                 cluster_details[rep]["expanded_members"].append({
                     "token": tok.decode([xtid]),
                     "token_id": xtid,
@@ -103,25 +108,24 @@ def main():
                 deduped.append(m)
         cd["expanded_members"] = deduped
 
-    n_expanded = len(expanded_ids) - len(seed_ids)
+    n_expanded = len(expanded_ids) - len(seed_id_to_meta)
     print(f"Expanded set: {len(expanded_ids)} token IDs (+{n_expanded} via treetok)", flush=True)
     print(f"Clusters with expansions: {sum(1 for c in cluster_details.values() if c['expanded_members'])}", flush=True)
 
-    # Build the full token list sorted by original rank (seeds first, then expansions)
-    all_tokens_sorted = []
+    # Build full token list: seeds first (sorted by rank), then treetok-only additions
+    full_token_list = []
     for r in seed_records:
         for tid in r["ngram"]:
-            all_tokens_sorted.append({
+            full_token_list.append({
                 "token": tok.decode([tid]),
                 "token_id": tid,
                 "rank": r["rank"],
-                "score": r["score"],
+                "score": round(r["score"], 6),
                 "above_cutoff": r.get("above_cutoff", False),
                 "source": "fighting_words",
             })
-    # Add treetok-only expansions
-    for tid in sorted(expanded_ids - seed_ids):
-        all_tokens_sorted.append({
+    for tid in sorted(expanded_ids - set(seed_id_to_meta.keys())):
+        full_token_list.append({
             "token": tok.decode([tid]),
             "token_id": tid,
             "rank": None,
@@ -129,10 +133,6 @@ def main():
             "above_cutoff": False,
             "source": "treetok_expansion",
         })
-
-    # Summary stats
-    score_cliff_before = results[CLIFF_RANK - 1]["score"]
-    score_cliff_after = results[CLIFF_RANK]["score"]
 
     output = {
         "method": {
@@ -147,38 +147,42 @@ def main():
                 "All tokens above the cliff form the metacognitive cluster."
             ),
             "step3_treetok_expansion": (
-                "Run treetok (Levenshtein distance=1) over the full Qwen3-0.6B vocabulary "
-                "to cluster morphological variants (case, inflection, punctuation). "
-                "For each seed token in the cluster, add all treetok cluster-mates "
-                "to the expanded set — capturing variants outside the original top-1281."
+                f"Run treetok TokenClusterer (Levenshtein distance=1) over the full "
+                f"Qwen3-0.6B vocabulary ({len(vocab):,} tokens). For each seed token "
+                "in the top-1281 cluster, collect all cluster-mates — capturing "
+                "morphological variants (case, inflection, punctuation attachment) "
+                "not present in the original Fighting Words cluster."
             ),
         },
         "summary": {
             "model": MODEL,
-            "seed_token_count": len(seed_ids),
+            "vocab_size": len(vocab),
+            "seed_token_count": len(seed_id_to_meta),
             "expanded_token_count": len(expanded_ids),
             "treetok_additions": n_expanded,
+            "seeds_with_expansions": sum(1 for c in cluster_details.values() if c["expanded_members"]),
             "score_at_cliff_before": score_cliff_before,
             "score_at_cliff_after": score_cliff_after,
-            "score_cliff_gap": score_cliff_before - score_cliff_after,
+            "score_cliff_gap": round(score_cliff_before - score_cliff_after, 6),
             "cliff_rank": CLIFF_RANK,
+            "max_levenshtein_distance": 1,
         },
         "cluster_details": sorted(
             [cd for cd in cluster_details.values() if cd["expanded_members"]],
             key=lambda x: x["seed_members"][0]["rank"] if x["seed_members"] else 9999,
         ),
-        "full_token_list": all_tokens_sorted,
+        "full_token_list": full_token_list,
     }
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(output, indent=2))
     print(f"\nSaved to {OUTPUT_PATH}", flush=True)
 
-    # Print top expansions for quick review
+    # Print top expansions for review
     print("\nTop-30 seed expansions via treetok:")
     for cd in output["cluster_details"][:30]:
-        seeds = ", ".join(repr(m["token"]) for m in cd["seed_members"][:3])
-        exps = ", ".join(repr(m["token"]) for m in cd["expanded_members"][:5])
+        seeds = ", ".join(repr(m["token"]) for m in cd["seed_members"][:2])
+        exps  = ", ".join(repr(m["token"]) for m in cd["expanded_members"][:6])
         print(f"  [{seeds}] -> {exps}")
 
 

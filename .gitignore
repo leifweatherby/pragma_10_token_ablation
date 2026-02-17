@@ -5,6 +5,8 @@ data/**
 !data/qwen3-0.6B-arc-easy/
 !data/qwen3-0.6B-arc-easy/ablation_report.html
 !data/qwen3-0.6B-arc-easy/run_info.json
+!data/metacognitive_tokens.json
+!data/metacognitive_token_report.html
 
 # rclone
 rclone.conf
