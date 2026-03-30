@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARC-Easy Ablation Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1, h2, h3 { color: #2c3e50; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .header h1, .header p { color: white; margin: 4px 0; }
+        .section {
+            background: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .results-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+        .negative { color: #e74c3c; font-weight: bold; }
+        .positive { color: #27ae60; font-weight: bold; }
+        .token-list {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .token-list ol { margin: 10px 0; padding-left: 25px; }
+        .token-list li { margin: 5px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background: #667eea; color: white; }
+        tr:hover { background: #f9f9f9; }
+        .key-finding {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .badge-ablated { background: #fde8e8; color: #c0392b; }
+        .badge-queued  { background: #eaf4ff; color: #2980b9; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
+        .note { color: #7f8c8d; font-size: 0.85em; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 ARC-Easy Ablation Report</h1>
+        <p>Experiment Date: February 16, 2026</p>
+        <p>Model: Qwen/Qwen3-0.6B &nbsp;|&nbsp; Judge: simple-regex &nbsp;|&nbsp; Metric: Fighting Words</p>
+    </div>
+
+    <div class="section">
+        <h2>🎯 Experiment Overview</h2>
+        <p><strong>Task:</strong> ARC-Easy (Elementary science multiple-choice questions)</p>
+        <p><strong>Dataset:</strong> allenai/ai2_arc, 100 test examples</p>
+        <p><strong>Goal:</strong> Measure CoT impact and identify distinctive metacognitive tokens — as a null/control condition relative to harder tasks where CoT helps.</p>
+        <p><strong>Ablation config:</strong> top_k=10, cutoff_quantile=0.98, strategy=mask, ngram_range=[1,1], max_steps=20</p>
+    </div>
+
+    <div class="section">
+        <h2>📈 Performance Results</h2>
+        <table>
+            <tr>
+                <th>Condition</th>
+                <th>Correct</th>
+                <th>Accuracy</th>
+                <th>Delta vs Baseline</th>
+            </tr>
+            <tr>
+                <td><strong>Baseline (CoT-OFF)</strong></td>
+                <td>50 / 100</td>
+                <td>50.0%</td>
+                <td>—</td>
+            </tr>
+            <tr>
+                <td><strong>Step 0 (CoT-ON)</strong></td>
+                <td>48 / 100</td>
+                <td>48.0%</td>
+                <td><span class="negative">−2.0%</span></td>
+            </tr>
+        </table>
+
+        <div class="results-box">
+Performance verdict: <span class="negative">WORSE</span>
+Termination reason: degraded (CoT hurt rather than helped)
+Steps completed: 1 / 20
+        </div>
+
+        <div class="key-finding">
+            <strong>Interpretation:</strong> ARC-Easy appears to be at or below the complexity
+            threshold where deliberative CoT reasoning helps Qwen3-0.6B. The −2% delta is
+            consistent with the hypothesis that metacognitive tokens are only load-bearing on
+            tasks requiring multi-step inference. This makes ARC-Easy a useful control condition:
+            we can measure whether ablating these tokens changes performance on <em>harder</em>
+            tasks (OpenBookQA, ARC-Challenge) while expecting near-zero effect here.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🔬 Distinctive Tokens — Ablated Set (Top 10)</h2>
+        <p>Tokens most over-represented in CoT-ON reasoning vs CoT-OFF responses,
+        by Fighting Words log-odds ratio. These 10 were masked in step 0.</p>
+
+        <table>
+            <tr>
+                <th>Rank</th>
+                <th>Token</th>
+                <th>Score</th>
+                <th>Semantic role</th>
+                <th>Status</th>
+            </tr>
+            <tr><td>0</td><td><code>Okay</code></td><td>4.073</td><td>Deliberation initiator</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>1</td><td><code>\n</code></td><td>4.073</td><td>Structural separator</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>2</td><td><code> So</code></td><td>4.073</td><td>Logical connector</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>3</td><td><code> I</code></td><td>4.073</td><td>Self-reference / first-person reasoning</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>4</td><td><code> think</code></td><td>4.072</td><td>Metacognition marker</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>5</td><td><code> But</code></td><td>4.072</td><td>Contrastive reasoning / alternatives</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>6</td><td><code>?</code></td><td>4.072</td><td>Self-questioning</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>7</td><td><code>First</code></td><td>4.072</td><td>Step planning marker</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>8</td><td><code> maybe</code></td><td>4.072</td><td>Uncertainty hedge</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+            <tr><td>9</td><td><code> might</code></td><td>4.070</td><td>Possibility / epistemic hedge</td><td><span class="badge badge-ablated">ABLATED</span></td></tr>
+        </table>
+
+        <p><strong>Distinctiveness metrics:</strong> cutoff = 4.070 &nbsp;|&nbsp; score range: −6.704 → 4.073 &nbsp;|&nbsp; total vocab ranked: 3,583 tokens</p>
+
+        <div class="key-finding">
+            <strong>Replication:</strong> These are the same 10 tokens identified in the
+            earlier session (Feb 9) on OpenBookQA and ARC-Easy. The consistency across
+            independent runs validates the Fighting Words metric and confirms these tokens
+            are a stable signature of Qwen3-0.6B's metacognitive reasoning style.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📈 Rising Tokens — Next-in-Line (Ranks 10–29)</h2>
+        <p>These tokens were just below the ablation cutoff at step 0.
+        They are the candidates that would have <strong>risen in distinctiveness rank</strong>
+        if ablation had continued past step 0 — i.e., the tokens the model would
+        most likely compensate with once <code>Okay</code>, <code>So</code>, <code>think</code>, etc. were masked.</p>
+        <p class="note">Note: with only 1 step completed (run stopped at "degraded"), cross-step
+        trajectory data is unavailable. The table below shows the static rank 11–30 snapshot
+        from step 0 — a proxy for what would rise in a multi-step run on a task where CoT helps.</p>
+
+        <table>
+            <tr>
+                <th>Rank</th>
+                <th>Token</th>
+                <th>Score</th>
+                <th>Semantic role</th>
+                <th>Status</th>
+            </tr>
+            <tr><td>10</td><td><code> let</code></td><td>4.070</td><td>Deliberation initiator ("let me think…")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>11</td><td><code> remember</code></td><td>4.070</td><td>Memory retrieval marker</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>12</td><td><code>Wait</code></td><td>4.070</td><td>Self-correction marker</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>13</td><td><code> wait</code></td><td>4.070</td><td>Self-correction (lowercase variant)</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>14</td><td><code> That</code></td><td>4.069</td><td>Reference resolution</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>15</td><td><code> says</code></td><td>4.069</td><td>Evidence citation</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>16</td><td><code> check</code></td><td>4.069</td><td>Verification ("let me check")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>17</td><td><code> For</code></td><td>4.069</td><td>Reason-giving initiator</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>18</td><td><code> recall</code></td><td>4.069</td><td>Memory retrieval</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>19</td><td><code> option</code></td><td>4.069</td><td>Option enumeration</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>20</td><td><code> figure</code></td><td>4.069</td><td>Problem-solving ("figure out")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>21</td><td><code> Hmm</code></td><td>4.068</td><td>Uncertainty / deliberation</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>22</td><td><code> Wait</code></td><td>4.068</td><td>Self-correction (spaced variant)</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>23</td><td><code> sure</code></td><td>4.068</td><td>Confidence hedge ("not sure")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>24</td><td><code> isn</code></td><td>4.068</td><td>Negation fragment ("isn't")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>25</td><td><code> seems</code></td><td>4.068</td><td>Epistemic hedge</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>26</td><td><code> Maybe</code></td><td>4.068</td><td>Uncertainty (capital variant of rank 8)</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>27</td><td><code> probably</code></td><td>4.068</td><td>Probability hedge</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>28</td><td><code> sense</code></td><td>4.068</td><td>Plausibility check ("makes sense")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+            <tr><td>29</td><td><code>'m</code></td><td>4.068</td><td>First-person contraction ("I'm")</td><td><span class="badge badge-queued">QUEUED</span></td></tr>
+        </table>
+
+        <div class="key-finding">
+            <strong>Key pattern:</strong> The queued tokens are entirely metacognitive in character —
+            self-correction (<code>Wait</code>), memory retrieval (<code>remember</code>, <code>recall</code>),
+            uncertainty hedging (<code>Hmm</code>, <code>seems</code>, <code>probably</code>),
+            and deliberation initiators (<code>let</code>, <code>check</code>, <code>figure</code>).
+            Their scores are nearly identical to the top-10 (4.068–4.070 vs 4.070–4.073),
+            suggesting the model has a <strong>large, densely-packed cluster of synonymous
+            metacognitive tokens</strong> — ablation would need many steps to exhaust this
+            redundancy. This is a key design consideration for the OpenBookQA follow-up.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💡 Interpretation</h2>
+
+        <h3>Why Did CoT Hurt on ARC-Easy?</h3>
+        <ul>
+            <li><strong>Task below CoT threshold:</strong> Elementary science questions may not
+            require multi-step deliberation — direct recall is faster and more accurate</li>
+            <li><strong>Statistical noise:</strong> −2% on n=100 is within noise (95% CI ≈ ±10%)</li>
+            <li><strong>Overthinking penalty:</strong> CoT may introduce errors by second-guessing
+            correct intuitions on low-complexity questions</li>
+        </ul>
+
+        <h3>What the Rising Tokens Tell Us</h3>
+        <ul>
+            <li>The metacognitive vocabulary forms a <strong>dense, tightly-scored cluster</strong>
+            — ranks 0–29 span only 0.005 score units</li>
+            <li>Ablating top-10 would likely surface <code>let</code>, <code>Wait</code>,
+            <code>Hmm</code> at step 1, then <code>remember</code>, <code>probably</code> at step 2</li>
+            <li>The reasoning style appears <strong>distributed across synonymous tokens</strong>,
+            not bottlenecked — complete ablation may require 5–10+ steps</li>
+            <li>On a task where CoT helps (OpenBookQA), these rising tokens are the
+            compensation candidates to track with the RisingTokens viewer</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>📊 Cross-Run Comparison</h2>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Feb 9 Run</th>
+                <th>Feb 16 Run (this)</th>
+            </tr>
+            <tr><td>CoT-OFF Accuracy</td><td>46%</td><td>50%</td></tr>
+            <tr><td>CoT-ON Accuracy</td><td>47%</td><td>48%</td></tr>
+            <tr><td>Delta</td><td>+1%</td><td>−2%</td></tr>
+            <tr><td>Top-10 tokens</td><td>10 (same list)</td><td>10 (same list)</td></tr>
+            <tr><td>Ranks 11–29</td><td>—</td><td>let, remember, Wait, check, Hmm, probably…</td></tr>
+        </table>
+        <p>The token set is fully consistent across runs despite varying performance delta.
+        The metacognitive token signature is a stable property of the model, independent
+        of whether CoT helps or hurts on a given sample.</p>
+    </div>
+
+    <div class="section">
+        <h2>📁 Data Files</h2>
+        <ul>
+            <li><code>baseline.json</code> — CoT-OFF responses and verdicts (100 examples)</li>
+            <li><code>step_000.json</code> — CoT-ON responses, verdicts, and full
+            distinctiveness ranking (3,583 tokens scored)</li>
+            <li><code>run_info.json</code> — Experiment metadata and summary stats</li>
+            <li><code>ablation_report.html</code> — This report</li>
+        </ul>
+    </div>
+
+    <footer style="text-align: center; margin-top: 50px; padding: 20px; color: #7f8c8d; font-size: 0.85em;">
+        <p>Generated by pragma ablation framework &nbsp;|&nbsp; Last updated: 2026-02-17</p>
+    </footer>
+</body>
+</html>

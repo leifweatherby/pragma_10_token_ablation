@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pragma"
+version = "0.1.0"
+description = "Pragmatic ablation studies on chain-of-thought reasoning"
+requires-python = ">= 3.11"
+dependencies = []
+
+[tool.hatchling.build.targets.wheel]
+packages = ["pragma"]

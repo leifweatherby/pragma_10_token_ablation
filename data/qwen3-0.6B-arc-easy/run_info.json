@@ -1,0 +1,21 @@
+{
+  "model": "Qwen/Qwen3-0.6B",
+  "judge": "simple-regex",
+  "num_examples": 100,
+  "seed": 42,
+  "cutoff": 0.98,
+  "max_steps": 20,
+  "ngram_range": [
+    1,
+    1
+  ],
+  "metric": "fighting_words",
+  "strategy": "mask",
+  "penalty_weight": 1.0,
+  "top_k": 10,
+  "total_steps_completed": 1,
+  "total_ngrams_ablated": 10,
+  "termination_reason": "degraded",
+  "final_accuracy": 0.48,
+  "final_accuracy_delta": -0.020000000000000018
+}

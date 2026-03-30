@@ -1,6 +1,12 @@
-data/
+data/**
 !data/complexity_study_report.html
 !data/session_transcript_2026-02-09.txt
+!data/ablation_session_2026-02-16.html
+!data/qwen3-0.6B-arc-easy/
+!data/qwen3-0.6B-arc-easy/ablation_report.html
+!data/qwen3-0.6B-arc-easy/run_info.json
+!data/metacognitive_tokens.json
+!data/metacognitive_token_report.html
 
 # rclone
 rclone.conf

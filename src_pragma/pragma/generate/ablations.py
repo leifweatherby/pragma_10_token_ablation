@@ -405,8 +405,12 @@ class AblationRunner:
             score_stats,
         )
 
-        should_continue = is_better
-        reason = "" if should_continue else "degraded"
+        # Always continue collecting distinctive tokens regardless of performance.
+        # The ablation loop stops via max_steps or when no new n-grams are found,
+        # not because CoT is currently worse than baseline.  (A degraded run is
+        # still scientifically interesting — we want the tokens even at 0 % acc.)
+        should_continue = True
+        reason = "" if is_better else "degraded_but_continuing"
 
         return result, should_continue, reason
 

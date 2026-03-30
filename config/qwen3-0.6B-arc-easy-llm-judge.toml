@@ -1,0 +1,67 @@
+[model]
+name = "Qwen/Qwen3-0.6B"
+think_substring = "think"
+think_token_format = "<{tok}>"
+
+[dataset]
+name = "allenai/ai2_arc"
+config = "ARC-Easy"
+split = "test[:100]"
+
+[io]
+output = "data/qwen3-0.6B-arc-easy-llm"
+
+[runtime]
+batch_size = 4
+seed = 42
+attn_implementation = "sdpa"
+
+[ablations]
+# LLM Judge Configuration
+# Options:
+#   - OpenAI: "gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"
+#   - Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"
+#   - Local: Any OpenAI-compatible endpoint
+judge = "gpt-4o-mini"
+
+# API Configuration
+# For OpenAI: base_url = "https://api.openai.com/v1"
+# For Anthropic via OpenAI compat: base_url = "https://api.anthropic.com/v1" (with x-api-key header)
+# For local models: base_url = "http://localhost:8000/v1"
+base_url = "https://api.openai.com/v1"
+
+# Environment variable name containing the API key
+# Will read from: os.environ[api_key]
+# For OpenAI: export OPENAI_API_KEY="sk-..."
+# For Anthropic: export ANTHROPIC_API_KEY="sk-ant-..."
+api_key = "OPENAI_API_KEY"
+
+# Ablation parameters
+metric = "fighting_words"
+ngram_range = [1, 1]
+strategy = "mask"
+penalty_weight = 1.0
+cutoff = 0.98
+top_k = 10
+max_steps = 20
+
+[runs.think]
+enable_thinking = true
+
+[runs.think.generation]
+do_sample = true
+max_new_tokens = 512
+temperature = 0.6
+top_p = 0.95
+top_k = 20
+min_p = 0.0
+
+[runs.no_think]
+enable_thinking = false
+
+[runs.no_think.generation]
+do_sample = true
+max_new_tokens = 256
+temperature = 0.7
+top_p = 0.8
+top_k = 20

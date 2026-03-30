@@ -46,13 +46,21 @@ def tokenize(
 
     batch_ids = []
     for msg in batch_msg:
-        input_ids = tokenizer.apply_chat_template(
+        result = tokenizer.apply_chat_template(
             msg,
             tokenize=True,
             add_generation_prompt=True,
             enable_thinking=enable_thinking,
             return_tensors="pt",
         )
+        # Handle both tensor and dict returns from apply_chat_template
+        if isinstance(result, dict):
+            input_ids = result['input_ids']
+        elif hasattr(result, 'input_ids'):
+            # Handle dict-like objects (BatchEncoding, etc.)
+            input_ids = result.input_ids
+        else:
+            input_ids = result
         batch_ids.append(input_ids.squeeze(0))
 
     # Left-pad to max sequence length in batch

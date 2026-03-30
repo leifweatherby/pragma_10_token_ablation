@@ -7,6 +7,7 @@ import { api } from '../api/client';
 import type { Step } from '../types';
 import { StepNgramAnalysis } from './StepNgramAnalysis';
 import { CollapsibleQuestionsSection } from './CollapsibleQuestionsSection';
+import { RisingTokens } from './RisingTokens';
 
 export function StepViewer(props: {
   runName: string;
@@ -92,6 +93,17 @@ export function StepViewer(props: {
             </div>
           </Show>
         </div>
+      </div>
+
+      {/* Rising Tokens — cross-step trajectory panel */}
+      <div class="max-w-[650px] mx-auto px-6 pt-6">
+        <Show when={allStepsData() && allStepsData()!.length >= 2 && runInfo()}>
+          <RisingTokens
+            allStepsData={allStepsData()!}
+            modelName={runInfo()!.model}
+            topK={runInfo()!.top_k ?? 10}
+          />
+        </Show>
       </div>
 
       {/* Step content - show loading or data */}
